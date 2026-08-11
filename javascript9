@@ -1,0 +1,25 @@
+// mobile/src/store/store.js
+import { configureStore } from '@reduxjs/toolkit';
+import userReducer from './slices/userSlice';
+import chatReducer from './slices/chatSlice';
+import radarReducer from './slices/radarSlice';
+import foodReducer from './slices/foodSlice';
+import obdReducer from './slices/obdSlice';
+import uiReducer from './slices/uiSlice';
+
+export const store = configureStore({
+  reducer: {
+    user: userReducer,
+    chat: chatReducer,
+    radar: radarReducer,
+    food: foodReducer,
+    obd: obdReducer,
+    ui: uiReducer,
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: ['socket/connect', 'socket/disconnect'],
+      },
+    }),
+});
