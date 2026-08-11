@@ -1,0 +1,26 @@
+roadie-app/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml
+├── backend/
+│   ├── src/
+│   ├── migrations/
+│   │   └── 001_initial.sql
+│   ├── package.json
+│   └── Dockerfile
+├── mobile/
+│   ├── src/
+│   ├── dist/
+│   ├── package.json
+│   └── expo.config.js
+├── websocket/
+│   ├── src/
+│   └── package.json
+├── ai-service/
+│   ├── src/
+│   └── package.json
+├── vercel.json
+├── railway.json
+├── docker-compose.yml
+├── .env
+└── README.md
