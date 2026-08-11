@@ -1,0 +1,70 @@
+// backend/src/models/Message.js
+const mongoose = require('mongoose');
+
+const MessageSchema = new mongoose.Schema({
+  conversationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Conversation',
+    required: true,
+  },
+  sender: {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    username: String,
+    displayName: String,
+    accent: String,
+  },
+  content: {
+    type: String,
+    required: true,
+  },
+  type: {
+    type: String,
+    enum: ['text', 'voice', 'location', 'image', 'dashcam_request', 'broadcast'],
+    default: 'text',
+  },
+  metadata: {
+    voiceUrl: String,
+    voiceDuration: Number,
+    location: {
+      latitude: Number,
+      longitude: Number,
+      address: String,
+    },
+    imageUrl: String,
+    dashcamRequest: {
+      requestedBy: mongoose.Schema.Types.ObjectId,
+      requestedFrom: [mongoose.Schema.Types.ObjectId],
+      status: {
+        type: String,
+        enum: ['pending', 'accepted', 'rejected'],
+        default: 'pending',
+      },
+    },
+  },
+  readBy: [{
+    userId: mongoose.Schema.Types.ObjectId,
+    readAt: {
+      type: Date,
+      default: Date.now,
+    },
+  }],
+  deliveredTo: [{
+    userId: mongoose.Schema.Types.ObjectId,
+    deliveredAt: {
+      type: Date,
+      default: Date.now,
+    },
+  }],
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+MessageSchema.index({ conversationId: 1, createdAt: -1 });
+
+module.exports = mongoose.model('Message', MessageSchema);
