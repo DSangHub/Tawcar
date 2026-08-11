@@ -1,0 +1,44 @@
+// backend/src/services/analytics.js
+const redis = require('../config/redis');
+
+class AnalyticsService {
+  // Track user activity
+  static async trackActivity(userId, action, metadata = {}) {
+    const key = `analytics:${userId}`;
+    await redis.lpush(key, JSON.stringify({
+      action,
+      metadata,
+      timestamp: new Date().toISOString(),
+    }));
+    await redis.ltrim(key, 0, 999); // Keep last 1000 events
+  }
+
+  // Track OBD data
+  static async trackOBDData(userId, obdData) {
+    await redis.hset(`obd:${userId}:latest`, {
+      speed: obdData.speed,
+      rpm: obdData.rpm,
+      temp: obdData.temp,
+      fuel: obdData.fuel,
+      timestamp: Date.now(),
+    });
+  }
+
+  // Get user analytics
+  static async getUserAnalytics(userId) {
+    const events = await redis.lrange(`analytics:${userId}`, 0, 99);
+    const parsedEvents = events.map(e => JSON.parse(e));
+    
+    return {
+      totalEvents: await redis.llen(`analytics:${userId}`),
+      recentEvents: parsedEvents,
+      stats: {
+        messagesSent: parsedEvents.filter(e => e.action === 'send_message').length,
+        radarScans: parsedEvents.filter(e => e.action === 'radar_scan').length,
+        foodSearches: parsedEvents.filter(e => e.action === 'food_search').length,
+      },
+    };
+  }
+}
+
+module.exports = AnalyticsService;
