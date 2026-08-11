@@ -1,0 +1,186 @@
+// backend/src/services/aiService.js
+const OpenAI = require('openai');
+const { Configuration, OpenAIApi } = require('openai');
+const axios = require('axios');
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
+
+class AIService {
+  // ---------- ACCENT TRANSLATION ----------
+  static async translateWithAccent(text, accent = 'british') {
+    const accentPrompts = {
+      british: 'You are a posh British butler. Speak formally, use "sir/madam", "I say", "jolly good", "indeed", "chap", "old bean".',
+      southern: 'You are a friendly Southern gentleman from Texas. Use "howdy", "y\'all", "fixin\' to", "bless your heart", "well shoot", "sweet tea".',
+      robot: 'You are a robot from the future. Speak in short, binary-like phrases. Use "BEEP", "BOOP", "AFFIRMATIVE", "NEGATIVE", "PROCESSING".',
+      pirate: 'You are a pirate from the Caribbean. Use "arrr", "matey", "avast", "shiver me timbers", "walk the plank", "booty".',
+      surfer: 'You are a laid-back California surfer. Use "dude", "rad", "gnarly", "stoked", "hang ten", "cowabunga", "bro".',
+      valley: 'You are a Valley Girl from the 80s. Use "like, totally", "oh my god", "gag me with a spoon", "as if", "fer sure", "grody".',
+      gamer: 'You are an esports gamer. Use "GG", "EZ", "nerf", "buff", "clutch", "destroyed", "dominated", "carried".',
+      rockstar: 'You are a 80s rockstar. Use "man", "groovy", "rock on", "far out", "nice riff", "mosh pit", "groupie".',
+      vampire: 'You are a Victorian vampire. Use "eternal", "blood", "night", "mortals", "thy", "thou", "darkness", "ancient".',
+      elven: 'You are an Elven lord from Middle Earth. Use "mellon", "valar", "mithril", "grace", "eternal", "enchanted", "elven".',
+    };
+
+    try {
+      const response = await openai.createChatCompletion({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a car assistant. ${accentPrompts[accent] || accentPrompts.british} 
+                      Transform the following message into your accent while keeping the meaning. 
+                      Make it sound authentic and conversational.`,
+          },
+          {
+            role: 'user',
+            content: text,
+          },
+        ],
+        max_tokens: 150,
+        temperature: 0.8,
+      });
+
+      return response.data.choices[0].message.content;
+    } catch (error) {
+      console.error('Accent Translation Error:', error);
+      return text; // Fallback to original text
+    }
+  }
+
+  // ---------- FOOD RECOMMENDATIONS ----------
+  static async getFoodRecommendations(query, userLocation) {
+    try {
+      const response = await openai.createChatCompletion({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a food recommendation expert. 
+                      Suggest 5 restaurants based on the user's query and location.
+                      Return as JSON with fields: name, cuisine, rating, distance, description, address.`,
+          },
+          {
+            role: 'user',
+            content: `Location: ${userLocation.latitude}, ${userLocation.longitude}. 
+                      Query: "${query || 'Best food nearby'}"`,
+          },
+        ],
+        max_tokens: 500,
+        temperature: 0.7,
+      });
+
+      const content = response.data.choices[0].message.content;
+      try {
+        return JSON.parse(content);
+      } catch {
+        return { error: 'Failed to parse recommendations', data: content };
+      }
+    } catch (error) {
+      console.error('Food Recommendations Error:', error);
+      return { error: 'Food recommendation failed' };
+    }
+  }
+
+  // ---------- CAR DIAGNOSTICS ----------
+  static async diagnoseCar(errorCodes, vehicleData) {
+    try {
+      const response = await openai.createChatCompletion({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert automotive mechanic. Analyze OBD-II error codes and vehicle data.
+                      Provide: severity, description, possible causes, recommended actions, estimated cost.
+                      Return as JSON.`,
+          },
+          {
+            role: 'user',
+            content: `Error Codes: ${errorCodes.join(', ')}
+                      Vehicle: ${JSON.stringify(vehicleData)}
+                      Provide detailed diagnosis.`,
+          },
+        ],
+        max_tokens: 500,
+        temperature: 0.5,
+      });
+
+      const content = response.data.choices[0].message.content;
+      try {
+        return JSON.parse(content);
+      } catch {
+        return { error: 'Failed to parse diagnosis', data: content };
+      }
+    } catch (error) {
+      console.error('Diagnosis Error:', error);
+      return { error: 'Diagnosis failed' };
+    }
+  }
+
+  // ---------- SUGGEST REPLY ----------
+  static async suggestReply(conversationContext) {
+    try {
+      const response = await openai.createChatCompletion({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a helpful assistant. Suggest 5 appropriate replies to continue the conversation.
+                      Keep replies brief, friendly, and conversational.`,
+          },
+          {
+            role: 'user',
+            content: `Conversation history: ${conversationContext}
+                      Suggest 5 natural replies.`,
+          },
+        ],
+        max_tokens: 100,
+        temperature: 0.8,
+      });
+
+      const content = response.data.choices[0].message.content;
+      return content.split('\n').filter(line => line.trim());
+    } catch (error) {
+      console.error('Suggest Reply Error:', error);
+      return ['Sounds good! 👍', 'I agree! 😊', 'Let\'s do it! 🚗'];
+    }
+  }
+
+  // ---------- CONVOY ROUTE PLANNER ----------
+  static async planConvoyRoute(destinations, vehicleCount) {
+    try {
+      const response = await openai.createChatCompletion({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a convoy route planner. Optimize the route for ${vehicleCount} vehicles.
+                      Suggest stops, estimated times, and convoy meeting points.
+                      Return as JSON with: route, stops, estimatedTime, recommendations.`,
+          },
+          {
+            role: 'user',
+            content: `Destinations: ${destinations.join(', ')}
+                      Vehicle Count: ${vehicleCount}`,
+          },
+        ],
+        max_tokens: 400,
+        temperature: 0.6,
+      });
+
+      const content = response.data.choices[0].message.content;
+      try {
+        return JSON.parse(content);
+      } catch {
+        return { error: 'Failed to parse route', data: content };
+      }
+    } catch (error) {
+      console.error('Convoy Route Error:', error);
+      return { error: 'Route planning failed' };
+    }
+  }
+}
+
+module.exports = AIService;
