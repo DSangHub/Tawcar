@@ -1,0 +1,92 @@
+roadie-app/
+├── mobile/                    # React Native App
+│   ├── src/
+│   │   ├── screens/
+│   │   │   ├── HomeScreen.js
+│   │   │   ├── RadarScreen.js
+│   │   │   ├── ChatScreen.js
+│   │   │   ├── FoodScreen.js
+│   │   │   ├── VoiceScreen.js
+│   │   │   ├── PremiumScreen.js
+│   │   │   └── DiagnosticsScreen.js
+│   │   ├── components/
+│   │   │   ├── OBDReader.js
+│   │   │   ├── VoiceAssistant.js
+│   │   │   ├── MeshNetwork.js
+│   │   │   └── PremiumBadge.js
+│   │   ├── services/
+│   │   │   ├── api.js
+│   │   │   ├── websocket.js
+│   │   │   └── storage.js
+│   │   ├── store/
+│   │   │   ├── actions.js
+│   │   │   ├── reducers.js
+│   │   │   └── store.js
+│   │   └── utils/
+│   │       ├── helpers.js
+│   │       └── constants.js
+│   ├── package.json
+│   └── App.js
+│
+├── backend/                    # Node.js API Server
+│   ├── src/
+│   │   ├── controllers/
+│   │   │   ├── authController.js
+│   │   │   ├── userController.js
+│   │   │   ├── vehicleController.js
+│   │   │   ├── chatController.js
+│   │   │   ├── foodController.js
+│   │   │   └── paymentController.js
+│   │   ├── models/
+│   │   │   ├── User.js
+│   │   │   ├── Vehicle.js
+│   │   │   ├── Conversation.js
+│   │   │   ├── Message.js
+│   │   │   ├── FoodSpot.js
+│   │   │   └── Subscription.js
+│   │   ├── routes/
+│   │   │   ├── auth.js
+│   │   │   ├── users.js
+│   │   │   ├── vehicles.js
+│   │   │   ├── chat.js
+│   │   │   ├── food.js
+│   │   │   └── payments.js
+│   │   ├── middleware/
+│   │   │   ├── auth.js
+│   │   │   └── errorHandler.js
+│   │   ├── services/
+│   │   │   ├── aiService.js
+│   │   │   ├── meshService.js
+│   │   │   ├── obdService.js
+│   │   │   └── paymentService.js
+│   │   └── config/
+│   │       ├── database.js
+│   │       ├── redis.js
+│   │       └── socket.js
+│   ├── package.json
+│   └── server.js
+│
+├── websocket/                  # WebSocket Server (Real-time)
+│   ├── src/
+│   │   ├── index.js
+│   │   ├── handlers/
+│   │   │   ├── chatHandler.js
+│   │   │   ├── locationHandler.js
+│   │   │   └── convoyHandler.js
+│   │   └── services/
+│   │       └── messageQueue.js
+│   └── package.json
+│
+├── database/                   # Database Scripts
+│   ├── migrations/
+│   └── seeds/
+│
+├── ai-service/                 # AI & Voice Service
+│   ├── src/
+│   │   ├── index.js
+│   │   ├── voiceGenerator.js
+│   │   ├── accentTranslator.js
+│   │   └── foodRecommender.js
+│   └── package.json
+│
+└── docker-compose.yml          # Docker Orchestration
