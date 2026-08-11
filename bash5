@@ -1,0 +1,25 @@
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login
+railway login
+
+# Link project
+railway link
+
+# Deploy
+railway up
+
+# View logs
+railway logs
+
+# Add environment variables
+railway env set JWT_SECRET "your-secret-key"
+railway env set OPENAI_API_KEY "sk-..."
+
+# Create database
+railway add postgresql
+railway add redis
+
+# Open dashboard
+railway open
