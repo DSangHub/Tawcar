@@ -1,0 +1,152 @@
+// mobile/src/store/slices/userSlice.js
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import api from '../../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Async Thunks
+export const login = createAsyncThunk(
+  'user/login',
+  async (credentials, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/auth/login', credentials);
+      const { user, token } = response.data.data;
+      
+      // Store token
+      await AsyncStorage.setItem('token', token);
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+      
+      return user;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Login failed');
+    }
+  }
+);
+
+export const register = createAsyncThunk(
+  'user/register',
+  async (userData, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/auth/register', userData);
+      const { user, token } = response.data.data;
+      
+      await AsyncStorage.setItem('token', token);
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+      
+      return user;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Registration failed');
+    }
+  }
+);
+
+export const updateProfile = createAsyncThunk(
+  'user/updateProfile',
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await api.put('/users/profile', data);
+      const user = response.data.data;
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+      return user;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Update failed');
+    }
+  }
+);
+
+export const upgradeToPremium = createAsyncThunk(
+  'user/upgradeToPremium',
+  async (priceId, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/payments/create-subscription', { priceId });
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Upgrade failed');
+    }
+  }
+);
+
+const initialState = {
+  user: null,
+  token: null,
+  isPremium: false,
+  accent: 'british',
+  isLoading: false,
+  error: null,
+};
+
+const userSlice = createSlice({
+  name: 'user',
+  initialState,
+  reducers: {
+    setUser: (state, action) => {
+      state.user = action.payload;
+      state.isPremium = action.payload.isPremium;
+      state.accent = action.payload.accent || 'british';
+    },
+    setAccent: (state, action) => {
+      state.accent = action.payload;
+      if (state.user) {
+        state.user.accent = action.payload;
+      }
+    },
+    logout: (state) => {
+      state.user = null;
+      state.token = null;
+      state.isPremium = false;
+      AsyncStorage.removeItem('token');
+      AsyncStorage.removeItem('user');
+    },
+    clearError: (state) => {
+      state.error = null;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      // Login
+      .addCase(login.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(login.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload;
+        state.isPremium = action.payload.isPremium;
+        state.accent = action.payload.accent || 'british';
+      })
+      .addCase(login.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      // Register
+      .addCase(register.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(register.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload;
+        state.isPremium = action.payload.isPremium;
+        state.accent = action.payload.accent || 'british';
+      })
+      .addCase(register.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      // Update Profile
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.user = action.payload;
+        state.isPremium = action.payload.isPremium;
+        state.accent = action.payload.accent || state.accent;
+      })
+      // Upgrade Premium
+      .addCase(upgradeToPremium.fulfilled, (state) => {
+        state.isPremium = true;
+        if (state.user) {
+          state.user.isPremium = true;
+        }
+      });
+  },
+});
+
+export const { setUser, setAccent, logout, clearError } = userSlice.actions;
+export default userSlice.reducer;
