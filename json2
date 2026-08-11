@@ -1,0 +1,18 @@
+{
+  "name": "roadie-backend",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "build": "npm run build:prod",
+    "build:prod": "npm install --production && npm prune --production",
+    "test": "jest",
+    "lint": "eslint src/",
+    "deploy": "railway up",
+    "migrate": "node src/scripts/migrate.js",
+    "seed": "node src/scripts/seed.js"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
