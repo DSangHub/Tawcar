@@ -1,0 +1,124 @@
+// backend/src/handlers/chatHandler.js
+const Conversation = require('../models/Conversation');
+const Message = require('../models/Message');
+const User = require('../models/User');
+
+exports.handleSendMessage = async (io, socket, data, redis) => {
+  try {
+    const { conversationId, content, type = 'text', metadata = {} } = data;
+
+    // Get conversation
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      socket.emit('error', { message: 'Conversation not found' });
+      return;
+    }
+
+    // Create message
+    const message = new Message({
+      conversationId: conversation._id,
+      sender: {
+        userId: socket.userId,
+        username: data.username || 'User',
+      },
+      content,
+      type,
+      metadata,
+    });
+
+    await message.save();
+
+    // Update conversation
+    conversation.lastMessage = {
+      text: content,
+      sender: socket.userId,
+      timestamp: Date.now(),
+      type,
+    };
+    conversation.updatedAt = Date.now();
+    await conversation.save();
+
+    // Notify participants
+    const participants = conversation.participants.map(p => p.userId.toString());
+    
+    // Broadcast to all participants in real-time
+    participants.forEach(async (participantId) => {
+      if (participantId === socket.userId.toString()) return;
+      
+      const socketId = await redis.hget(`user:${participantId}`, 'socketId');
+      if (socketId) {
+        io.to(socketId).emit('new_message', {
+          message,
+          conversationId: conversation._id,
+        });
+      }
+    });
+
+    // Update user stats
+    await User.findByIdAndUpdate(socket.userId, {
+      $inc: { 'stats.messagesSent': 1 },
+    });
+
+    socket.emit('message_sent', { success: true, message });
+
+  } catch (error) {
+    console.error('Send Message Error:', error);
+    socket.emit('error', { message: 'Failed to send message' });
+  }
+};
+
+exports.handleTyping = async (io, socket, data) => {
+  try {
+    const { conversationId, isTyping } = data;
+
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) return;
+
+    const participants = conversation.participants.map(p => p.userId.toString());
+    
+    participants.forEach(async (participantId) => {
+      if (participantId === socket.userId.toString()) return;
+      
+      const socketId = await redis.hget(`user:${participantId}`, 'socketId');
+      if (socketId) {
+        io.to(socketId).emit('user_typing', {
+          userId: socket.userId,
+          conversationId,
+          isTyping,
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Typing Error:', error);
+  }
+};
+
+exports.handleReadReceipt = async (io, socket, data) => {
+  try {
+    const { messageId, conversationId } = data;
+
+    await Message.findByIdAndUpdate(messageId, {
+      $addToSet: {
+        readBy: {
+          userId: socket.userId,
+          readAt: new Date(),
+        },
+      },
+    });
+
+    // Notify sender
+    const message = await Message.findById(messageId);
+    if (message) {
+      const senderSocketId = await redis.hget(`user:${message.sender.userId}`, 'socketId');
+      if (senderSocketId) {
+        io.to(senderSocketId).emit('message_read', {
+          messageId,
+          conversationId,
+          readBy: socket.userId,
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Read Receipt Error:', error);
+  }
+};
